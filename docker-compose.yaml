@@ -1,0 +1,68 @@
+version: "3.6"
+
+services:
+  wireguard:
+#    image: ctrlops/wireguard:latest
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+ #   user: ${UID}:${GID}
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=$UID
+      - PGID=$GID
+      - TZ=Etc/UTC
+      - SERVERURL=auto #optional 
+      - SERVERPORT=51820 #optional
+      - PEERS=1 #optional
+      - PEERDNS=auto #optional
+      - INTERNAL_SUBNET=10.11.12.0 #optional
+      - ALLOWEDIPS=0.0.0.0/0 #optional
+      - PERSISTENTKEEPALIVE_PEERS=25 #optional
+      - LOG_CONFS=true #optional
+    volumes:
+      - ./config:/config
+      - ./libmodules:/lib/modules
+      - ./custom-scripts:/custom-cont-init.d:ro
+    networks:
+      wireguard:
+        ipv4_address: 172.150.88.20
+    ports:
+      - "127.0.0.1:8888:8888"
+      - "51820:51820/udp"
+      - "51821:51821/udp" 
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: always
+
+  wg-portal:
+    #    image: wgportal/wg-portal:v2
+    image: wgportal/wg-portal:v2.0.0-alpha.2
+    container_name: wg-portal
+    restart: always
+#    user: ${UID}:${GID} 
+    depends_on:
+      - wireguard
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "3"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    network_mode: "service:wireguard"
+      #networks:
+      # wireguard:
+      #  ipv4_address: 172.150.88.21
+    volumes:
+      - ./config:/etc/wireguard
+#      - ./data:/app/data
+      - ./settings:/app/config  
+    environment:
+      # WireGuard Settings
+      - WG_PORTAL_CONFIG=/app/config/config.yml
+networks:
+  wireguard:
+    external: true
