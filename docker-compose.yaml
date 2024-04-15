@@ -63,6 +63,7 @@ services:
     environment:
       # WireGuard Settings
       - WG_PORTAL_CONFIG=/app/config/config.yml
+# network settings
 networks:
   wireguard:
     external: true
